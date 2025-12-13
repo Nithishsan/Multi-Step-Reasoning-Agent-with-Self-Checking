@@ -1,0 +1,22 @@
+{
+  "answer": "The journey is 3 hours and 35 minutes.",
+  "status": "success",
+  "reasoning_visible_to_user": "I calculated the difference between the arrival and departure times to determine the journey duration.",
+  "metadata": {
+    "plan": "Extract times → Convert to minutes → Compute difference → Validate → Format final duration.",
+    "checks": [
+      {
+        "check_name": "independent_resolve",
+        "passed": true,
+        "details": "Recomputed duration matches executor result."
+      },
+      {
+        "check_name": "duration_non_negative",
+        "passed": true,
+        "details": "Arrival time is after departure."
+      }
+    ],
+    "retries": 0
+  }
+}
+
