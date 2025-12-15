@@ -1,12 +1,8 @@
 import re
 
-
 def compute_time_difference(text: str) -> str:
     """
-    Extracts two HH:MM times from text and returns duration.
-    Example:
-    'A train leaves at 14:30 and arrives at 18:05'
-    → '3 hours 35 minutes'
+    Extracts two HH:MM times and returns duration in hours/minutes.
     """
     times = re.findall(r"(\d{1,2}):(\d{2})", text)
     if len(times) != 2:

@@ -1,27 +1,21 @@
 import re
 
-
 def safe_eval_math(text: str):
     """
-    Safely evaluates simple arithmetic expressions.
-    Supports: +, -, *, /
-    Returns int or float, or None if not applicable.
+    Extracts numbers and basic operators for simple arithmetic like:
+    - 2+2
+    - 10 - 4 + 2
+    - 3 * 7
+    - 20 / 5
     """
 
-    # Remove spaces
-    expr = text.replace(" ", "")
-
-    # Only allow digits and operators
-    if not re.fullmatch(r"[0-9+\-*/().]+", expr):
+    expr = re.findall(r"[0-9+\-*/ ]+", text)
+    if not expr:
         return None
+
+    expr = expr[0].strip()
 
     try:
-        result = eval(expr, {"__builtins__": {}})
-    except Exception:
+        return eval(expr, {"__builtins__": None}, {})
+    except:
         return None
-
-    # Normalize result
-    if isinstance(result, float) and result.is_integer():
-        return int(result)
-
-    return result

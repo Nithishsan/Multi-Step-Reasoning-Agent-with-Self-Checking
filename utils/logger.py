@@ -1,41 +1,45 @@
+import logging
+from logging.handlers import RotatingFileHandler
 import os
-import datetime
 
-class Logger:
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+def get_logger(name: str, level=logging.INFO):
     """
-    Lightweight logger for both CLI and Streamlit use.
-    Produces timestamped logs and optionally writes to a log file.
+    Creates a robust, reusable logger with:
+    - Console logging
+    - Rotating file logging
+    - Safe handler initialization (no duplicates)
     """
 
-    def __init__(self, name="Agent", log_to_file=False, logfile_path="logs/agent.log"):
-        self.name = name
-        self.log_to_file = log_to_file
-        self.logfile_path = logfile_path
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
 
-        if log_to_file:
-            os.makedirs(os.path.dirname(logfile_path), exist_ok=True)
+    if logger.handlers:  # Prevent duplicate handlers
+        return logger
 
-    def _timestamp(self):
-        return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # ----------- FORMATTERS -----------
+    log_format = "[%(asctime)s] [%(levelname)s] %(name)s: %(message)s"
+    formatter = logging.Formatter(log_format, datefmt="%Y-%m-%d %H:%M:%S")
 
-    def _write(self, level, message):
-        formatted = f"[{self._timestamp()}] [{self.name}] [{level}] {message}"
+    # ----------- CONSOLE HANDLER -----------
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
-        print(formatted)
+    # ----------- FILE HANDLER -----------
+    file_path = os.path.join(LOG_DIR, f"{name}.log")
+    file_handler = RotatingFileHandler(
+        file_path,
+        maxBytes=500_000,  
+        backupCount=3      
+    )
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
-        if self.log_to_file:
-            with open(self.logfile_path, "a", encoding="utf-8") as f:
-                f.write(formatted + "\n")
+    logger.propagate = False
 
-    # Public Methods
-    def info(self, msg):
-        self._write("INFO", msg)
+    logger.info("Logger initialized successfully.")
+    return logger
 
-    def warn(self, msg):
-        self._write("WARNING", msg)
-
-    def error(self, msg):
-        self._write("ERROR", msg)
-
-    def success(self, msg):
-        self._write("SUCCESS", msg)

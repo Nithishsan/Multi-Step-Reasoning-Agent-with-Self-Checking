@@ -1,22 +1,3 @@
-{
-  "answer": "The journey is 3 hours and 35 minutes.",
-  "status": "success",
-  "reasoning_visible_to_user": "I calculated the difference between the arrival and departure times to determine the journey duration.",
-  "metadata": {
-    "plan": "Extract times → Convert to minutes → Compute difference → Validate → Format final duration.",
-    "checks": [
-      {
-        "check_name": "independent_resolve",
-        "passed": true,
-        "details": "Recomputed duration matches executor result."
-      },
-      {
-        "check_name": "duration_non_negative",
-        "passed": true,
-        "details": "Arrival time is after departure."
-      }
-    ],
-    "retries": 0
-  }
-}
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:2af411d7decfde8bfc38ace7c9e98f25df3b0eecd759a23cb06b4048ca2ccd6f
+size 709
