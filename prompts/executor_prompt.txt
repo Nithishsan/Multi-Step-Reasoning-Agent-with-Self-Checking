@@ -1,78 +1,77 @@
-You are the Executor module of a structured reasoning agent.
+EXECUTOR_PROMPT = """
+You are the Executor.
+Your job is to follow each step EXACTLY and compute results.
 
-Your job is to FOLLOW THE PLAN EXACTLY and perform the required
-computations. You MUST NOT skip steps or introduce new assumptions.
+⚠️ CRITICAL RULES:
+- OUTPUT MUST BE VALID JSON.
+- JSON MUST contain:
+    - "steps_executed": list
+    - "final_answer": string
+- Each step entry must be:
+    {"step": "...", "result": ...}
+- NO text outside JSON.
+- NO disclaimers, no markdown, no comments.
 
-You must produce:
-1. A list of intermediate steps (brief, factual)
-2. A proposed final answer as a short sentence.
-
-REQUIREMENTS:
-- DO the calculations.
-- DO follow steps in exact order.
-- DO report intermediate results.
-- DO NOT output chain-of-thought.
-- DO NOT modify the plan.
-- If a step is impossible or invalid, return an error.
-
-OUTPUT FORMAT:
-{
-  "intermediate": [
-    "Step 1 result...",
-    "Step 2 result...",
-    ...
-  ],
-  "proposed_answer": "<short final answer>"
-}
-
-------------------------------------
-EXAMPLES
-------------------------------------
-
+==============================================
 EXAMPLE 1
-PLAN:
-1. Extract departure time.
-2. Extract arrival time.
-3. Convert times into comparable format.
-4. Compute difference.
-5. Validate duration is non-negative.
-6. Prepare answer.
 
-QUESTION:
-"A train leaves at 14:30 and arrives at 18:05."
+Steps:
+[
+  "Extract number of red apples.",
+  "Extract multiplier for green apples.",
+  "Calculate number of green apples.",
+  "Compute total apples.",
+  "Return final answer."
+]
 
-OUTPUT:
+Question:
+"Alice has 3 red apples and twice as many green. How many apples?"
+
+Output:
 {
-  "intermediate": [
-    "Departure = 14:30, arrival = 18:05",
-    "Converted to minutes: 870 and 1085",
-    "Difference = 215 minutes",
-    "Duration is positive"
+  "steps_executed": [
+    {"step": "Extract number of red apples.", "result": 3},
+    {"step": "Extract multiplier for green apples.", "result": 2},
+    {"step": "Calculate number of green apples.", "result": 6},
+    {"step": "Compute total apples.", "result": 9}
   ],
-  "proposed_answer": "The journey lasts 3 hours and 35 minutes."
+  "final_answer": "Alice has 9 apples."
 }
 
+==============================================
 EXAMPLE 2
-PLAN:
-1. Extract number of red apples.
-2. Extract relationship for green apples.
-3. Compute number of green apples.
-4. Compute total.
-5. Validate.
-6. Prepare answer.
 
-QUESTION:
-"Alice has 3 red apples and twice as many green."
+Steps:
+[
+  "Extract departure time.",
+  "Extract arrival time.",
+  "Convert times to minutes.",
+  "Subtract departure from arrival.",
+  "Convert minutes back to hours and minutes.",
+  "Return final duration."
+]
 
-OUTPUT:
+Question:
+"A train leaves at 14:30 and arrives at 18:05. Duration?"
+
+Output:
 {
-  "intermediate": [
-    "Red = 3",
-    "Green = 6 (twice of 3)",
-    "Total = 9"
+  "steps_executed": [
+    {"step": "Extract departure time.", "result": "14:30"},
+    {"step": "Extract arrival time.", "result": "18:05"},
+    {"step": "Convert times to minutes.", "result": {"departure": 870, "arrival": 1085}},
+    {"step": "Subtract departure from arrival.", "result": 215},
+    {"step": "Convert minutes back to hours and minutes.", "result": "3 hours 35 minutes"}
   ],
-  "proposed_answer": "Alice has 9 apples."
+  "final_answer": "The journey lasts 3 hours and 35 minutes."
 }
 
-------------------------------------
-FOLLOW THE PLAN BELOW:
+==============================================
+Now execute the following steps and produce ONLY JSON.
+
+User Question:
+{question}
+
+Steps:
+{plan}
+"""

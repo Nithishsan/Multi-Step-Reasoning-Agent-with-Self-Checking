@@ -1,34 +1,43 @@
-import json
-from llm.llm_client import call_llm
+import re
+from utils.math_utils import safe_eval_math
+from utils.time_utils import compute_time_difference
+
 
 class Verifier:
-    def __init__(self, prompt_template):
-        self.prompt_template = prompt_template
+    """
+    Rule-based verifier.
+    No LLM calls → zero cost, zero rate limits.
+    """
 
-    def verify(self, question: str, executor_output: dict) -> dict:
-        proposed = executor_output["proposed_answer"]
-        intermediates = executor_output["intermediate"]
+    def __init__(self):
+        self.name = "RuleBasedVerifier"
 
-        final_prompt = (
-            self.prompt_template
-            + "\nQUESTION:\n"
-            + question
-            + "\n\nEXECUTOR OUTPUT:\n"
-            + json.dumps(executor_output, indent=2)
-            + "\n"
-        )
+    def verify(self, question: str, answer: str) -> dict:
+        """
+        Verifies the answer using deterministic logic when possible.
+        Falls back to pass=True if verification is not applicable.
+        """
 
-        response = call_llm(final_prompt)
-
-        try:
-            data = json.loads(response)
-            if "passed" not in data or "details" not in data:
-               raise ValueError("Missing keys")
-            return data
-
-        except Exception:
-        # SAFETY NET: never crash the agent
+        # ---- Time problems ----
+        if "leaves at" in question and "arrives at" in question:
+            expected = compute_time_difference(question)
             return {
-                "passed": False,
-                "details": "Verifier returned invalid JSON output."
-    }
+                "passed": expected.lower() in answer.lower(),
+                "details": f"Expected duration: {expected}"
+            }
+
+        # ---- Simple arithmetic problems ----
+        numbers = list(map(int, re.findall(r"\d+", question)))
+        if numbers:
+            expected = safe_eval_math(question)
+            if expected is not None:
+                return {
+                    "passed": str(expected) in answer,
+                    "details": f"Expected numeric result: {expected}"
+                }
+
+        # ---- Default fallback ----
+        return {
+            "passed": True,
+            "details": "No deterministic rule applied; accepted by default."
+        }

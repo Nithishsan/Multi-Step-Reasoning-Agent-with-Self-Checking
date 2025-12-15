@@ -1,30 +1,38 @@
-import json
 from llm.llm_client import call_llm
+from agent.prompts import PLANNER_PROMPT
 
 
 class Planner:
-    def __init__(self, prompt_template: str):
-        self.prompt_template = prompt_template
+    """
+    Planner component responsible for decomposing
+    a user question into a structured reasoning plan.
 
-    def create_plan(self, question: str) -> list:
-        prompt = (
-            self.prompt_template
-            + "\nQUESTION:\n"
-            + question
-            + "\n"
-        )
+    Output is expected to be a JSON array of step strings.
+    """
 
+    def __init__(self):
+        self.name = "Planner"
+
+    def _build_prompt(self, question: str) -> str:
+        """
+        Constructs the planner prompt using the shared template.
+        """
+        return PLANNER_PROMPT.format(question=question)
+
+    def plan(self, question: str) -> str:
+        """
+        Generates a reasoning plan for the given question.
+
+        Returns:
+            Raw LLM output (JSON list of steps)
+        """
+        if not question or not question.strip():
+            raise ValueError("Planner received an empty question.")
+
+        prompt = self._build_prompt(question)
         response = call_llm(prompt)
 
-        try:
-           data = json.loads(response)
-           plan = data.get("plan")
+        if not response:
+            raise RuntimeError("Planner received empty response from LLM.")
 
-           if not isinstance(plan, list):
-               raise ValueError("Invalid plan structure")
-
-           return plan
-
-        except Exception:
-        # SAFETY: Planner must never crash the agent
-           return None
+        return response

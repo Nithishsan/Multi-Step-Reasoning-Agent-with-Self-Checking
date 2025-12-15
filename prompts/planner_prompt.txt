@@ -1,88 +1,57 @@
-You are the Planner module of a multi-step reasoning agent.
+PLANNER_PROMPT = """
+You are the Planner module of a reasoning agent.
+Your ONLY job is to break the question into clear steps.
 
-Your task is to read the user’s question and generate a concise,
-numbered plan describing how to solve it. This plan will be executed
-by another module, so it MUST be deterministic and atomic.
+⚠️ CRITICAL RULES:
+- OUTPUT MUST BE VALID JSON.
+- NO text outside the JSON list.
+- NO explanations, disclaimers, apologies, or commentary.
+- The JSON must be a list of plain strings.
+- Do NOT include numbering inside strings.
 
-IMPORTANT:
-- The question may contain multiple sentences.
-- Treat ALL sentences as part of ONE problem.
-- Do NOT ignore follow-up conditions such as:
-  "if", "also", "then", "destination is ahead/behind", "next day".
-- The plan MUST include steps for every constraint mentioned
-  anywhere in the question.
-
-REQUIREMENTS:
-1. Output MUST be JSON of the form:
-{
-  "plan": [
-    "Step 1...",
-    "Step 2...",
-    ...
-  ]
-}
-2. Steps must be atomic, unambiguous, and ordered.
-3. DO NOT perform any calculations.
-4. DO NOT provide the final answer.
-5. DO NOT add assumptions beyond the question.
-6. Cover typical operations:
-   - extract values and constraints
-   - convert units/times if needed
-   - identify computations
-   - validate quantities (positivity, ranges)
-   - prepare the final answer format
-
-------------------------------------
-EXAMPLES
-------------------------------------
-
+==============================================
 EXAMPLE 1
-QUESTION:
-"A train leaves at 14:30 and arrives at 18:05. How long is the journey?"
+Question: "Alice has 3 red apples and twice as many green. How many apples total?"
 
-OUTPUT:
-{
-  "plan": [
-    "Extract departure time.",
-    "Extract arrival time.",
-    "Convert both times into a comparable format.",
-    "Compute the time difference.",
-    "Validate that the result is non-negative.",
-    "Prepare the final answer."
-  ]
-}
+Output:
+[
+  "Extract number of red apples.",
+  "Extract multiplier for green apples.",
+  "Calculate number of green apples.",
+  "Compute total apples.",
+  "Return final answer."
+]
 
+==============================================
 EXAMPLE 2
-QUESTION:
-"Alice has 3 red apples and twice as many green apples. How many apples does she have?"
+Question: "A train leaves at 14:30 and arrives at 18:05. How long is the journey?"
 
-OUTPUT:
-{
-  "plan": [
-    "Extract number of red apples.",
-    "Extract relationship defining green apples.",
-    "Compute number of green apples.",
-    "Compute total apples.",
-    "Validate that values are non-negative.",
-    "Prepare the final answer."
-  ]
-}
+Output:
+[
+  "Extract departure time.",
+  "Extract arrival time.",
+  "Convert times to minutes.",
+  "Subtract departure from arrival.",
+  "Convert minutes back to hours and minutes.",
+  "Return final duration."
+]
 
+==============================================
 EXAMPLE 3
-QUESTION:
-"A meeting needs 60 minutes. Free slots: 09:00–09:30, 09:45–10:30, 11:00–12:00."
+Question: "Tom buys 5 pencils and 3 packs of pens. Each pack has 4 pens. Total items?"
 
-OUTPUT:
-{
-  "plan": [
-    "Extract required meeting duration.",
-    "Extract available time slots.",
-    "Convert each slot to its duration.",
-    "Compare each slot duration with required duration.",
-    "Identify slots that satisfy the requirement.",
-    "Prepare the final answer."
-  ]
-}
+Output:
+[
+  "Extract pencils count.",
+  "Extract pen pack count.",
+  "Extract pens per pack.",
+  "Calculate total pens.",
+  "Calculate total items.",
+  "Return final answer."
+]
 
-------------------------------------
-NOW GENERATE THE PLAN FOR THIS QUESTION:
+==============================================
+Now produce ONLY the JSON plan for this question:
+
+{question}
+"""

@@ -1,68 +1,100 @@
-import json
+from agent.planner import Planner
+from agent.executor import Executor
+from agent.verifier import Verifier
+from utils.json_utils import safe_json_loads
+from utils.math_utils import safe_eval_math
+from utils.time_utils import compute_time_difference
+
 
 class AgentController:
-    def __init__(self, planner, executor, verifier, max_retries=0):
-        self.planner = planner
-        self.executor = executor
-        self.verifier = verifier
-        self.max_retries = max_retries
+    """
+    Central controller for the Multi-Step Reasoning Agent.
+
+    Flow:
+    1. Fast deterministic handling (math / time) → NO LLM
+    2. Planner (LLM)
+    3. Executor (LLM)
+    4. Verifier (rule-based)
+    """
+
+    def __init__(self):
+        self.planner = Planner()
+        self.executor = Executor()
+        self.verifier = Verifier()
 
     def solve(self, question: str) -> dict:
-        retries = 0
-        last_error = None
-        verification_logs = []
+        if not question or not question.strip():
+            return self._fail("Empty question received.", None)
 
-        while retries <= self.max_retries:
+        question = question.strip()
 
-            try:
-                # 1. PLAN
-                plan = self.planner.create_plan(question)
+        # =====================================================
+        # FAST PATH — NO LLM (avoids cost + rate limits)
+        # =====================================================
 
-                # 2. EXECUTE
-                executor_output = self.executor.execute(question, plan)
+        # ---- Simple math ----
+        math_result = safe_eval_math(question)
+        if math_result is not None:
+            return {
+                "status": "success",
+                "answer": str(math_result),
+                "reasoning": "Solved deterministically (math_utils)",
+                "metadata": {"source": "math_utils"}
+            }
 
-                # 3. VERIFY
-                verification_result = self.verifier.verify(question, executor_output)
+        # ---- Time difference problems ----
+        if "leaves at" in question and "arrives at" in question:
+            duration = compute_time_difference(question)
+            if duration:
+                return {
+                    "status": "success",
+                    "answer": duration,
+                    "reasoning": "Solved deterministically (time_utils)",
+                    "metadata": {"source": "time_utils"}
+                }
 
-                verification_logs.append(verification_result)
+        # =====================================================
+        # SLOW PATH — LLM PIPELINE
+        # =====================================================
 
-                if verification_result["passed"]:
-                    # SUCCESS → return final JSON
-                    return {
-                        "answer": executor_output["proposed_answer"],
-                        "status": "success",
-                        "reasoning_visible_to_user": self._summarize(executor_output),
-                        "metadata": {
-                            "plan": plan,
-                            "checks": verification_logs,
-                            "retries": retries
-                        }
-                    }
+        # ---------- Step 1: Planner ----------
+        raw_plan = self.planner.plan(question)
+        plan = safe_json_loads(raw_plan)
 
-                else:
-                    retries += 1
-                    last_error = verification_result["details"]
-                    continue  # Retry planner + executor
+        if not plan:
+            return self._fail("Planner failed to produce valid JSON.", raw_plan)
 
-            except Exception as e:
-                last_error = str(e)
-                retries += 1
-                continue
+        # ---------- Step 2: Executor ----------
+        raw_exec = self.executor.execute(question, plan)
+        exec_result = safe_json_loads(raw_exec)
 
-        # If all retries FAILED → return failure JSON
+        if not exec_result or "final_answer" not in exec_result:
+            return self._fail("Executor failed to produce valid JSON.", raw_exec)
+
+        final_answer = exec_result["final_answer"]
+
+        # ---------- Step 3: Verifier (rule-based) ----------
+        verification = self.verifier.verify(question, final_answer)
+
+        if not verification.get("passed", False):
+            return self._fail("Verification failed.", verification)
+
+        # ---------- SUCCESS ----------
         return {
-            "answer": None,
-            "status": "failed",
-            "reasoning_visible_to_user": "Unable to produce a reliable answer.",
+            "status": "success",
+            "answer": final_answer,
+            "reasoning": exec_result,
             "metadata": {
-                "plan": None,
-                "checks": verification_logs,
-                "retries": retries,
-                "error": last_error
+                "plan": plan,
+                "verification": verification,
+                "source": "LLM + rules"
             }
         }
 
-    def _summarize(self, executor_output):
-        """Short user-safe explanation from intermediate steps."""
-        steps = executor_output["intermediate"]
-        return f"Steps taken: {', '.join(steps)}"
+    def _fail(self, reason: str, raw_output):
+        return {
+            "status": "failed",
+            "answer": None,
+            "error": reason,
+            "raw_output": raw_output
+        }
