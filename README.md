@@ -48,7 +48,34 @@ This project demonstrates how to build a **reliable, self-correcting LLM-based a
 | LLM Client | Abstracts the LLM provider (OpenAI) |      
 
 ## 📂 Project Structure
-<img width="255" height="744" alt="Screenshot 2025-12-13 140029" src="https://github.com/user-attachments/assets/a6224ee8-812f-4e61-8d70-64f6a6632c54" />
+📦 Multi-Step-Reasoning-Agent-with-Self-Checking
+│
+├── 📁 agent
+│   ├── 📄 __init__.py
+│   ├── 📄 controller.py
+│   ├── 📄 planner.py
+│   ├── 📄 executor.py
+│   └── 📄 prompts.py
+│
+├── 📁 llm
+│   ├── 📄 __init__.py
+│   └── 📄 llm_client.py
+│
+├── 📁 utils
+│   ├── 📄 __init__.py
+│   ├── 📄 math_utils.py
+│   ├── 📄 time_utils.py
+│   ├── 📄 scheduling_utils.py
+│   └── 📄 logger.py
+│
+├── 📁 tests
+│   └── 📄 test_agent.py
+│
+├── 📄 streamlit_app.py
+├── 📄 main.py
+├── 📄 requirements.txt
+├── 📄 .gitignore
+└── 📄 README.md
 
 
 ---
