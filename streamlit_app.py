@@ -1,97 +1,99 @@
 import streamlit as st
 from agent.controller import AgentController
+import time
 
-# --------------------------------------------------
+# -------------------------------------------------
 # Page config
-# --------------------------------------------------
+# -------------------------------------------------
 st.set_page_config(
     page_title="Multi-Step Reasoning Agent",
     page_icon="🧠",
     layout="centered"
 )
 
-# --------------------------------------------------
+# -------------------------------------------------
 # Header
-# --------------------------------------------------
-st.markdown(
-    """
-    <h1 style="text-align:center;">🧠 Multi-Step Reasoning Agent</h1>
-    <p style="text-align:center; color: gray;">
-        A hybrid AI system that plans → executes → verifies before answering
-    </p>
-    """,
-    unsafe_allow_html=True
+# -------------------------------------------------
+st.title("🧠 Multi-Step Reasoning Agent")
+st.caption(
+    "A hybrid AI system that plans → executes → verifies before answering.\n\n"
+    "• Deterministic logic for math & time\n"
+    "• OpenAI with Groq fallback for reasoning\n"
+    "• Built for reliability, not demos"
 )
 
 st.divider()
 
-# --------------------------------------------------
+# -------------------------------------------------
 # Controller
-# --------------------------------------------------
+# -------------------------------------------------
 controller = AgentController()
 
-# --------------------------------------------------
-# Input Section
-# --------------------------------------------------
-st.subheader("💬 Ask a Question")
-
+# -------------------------------------------------
+# Input
+# -------------------------------------------------
 question = st.text_area(
-    "Enter your question below:",
-    placeholder="e.g. A train leaves at 14:30 and arrives at 18:05. How long is the journey?",
+    "💬 Ask a question",
+    placeholder="e.g. Alice has 3 red apples and twice as many green apples. How many apples total?",
     height=120
 )
 
-run = st.button("🚀 Run Agent", use_container_width=True)
+# -------------------------------------------------
+# Run button
+# -------------------------------------------------
+if st.button("🚀 Run Agent", use_container_width=True):
 
-# --------------------------------------------------
-# Execution
-# --------------------------------------------------
-if run:
     if not question.strip():
-        st.warning("Please enter a question before running the agent.")
+        st.warning("Please enter a question.")
     else:
-        with st.spinner("🧠 Reasoning in progress..."):
+        with st.spinner("Thinking..."):
+            start_time = time.time()
             result = controller.solve(question)
+            elapsed = round(time.time() - start_time, 2)
 
         st.divider()
 
-        # --------------------------------------------------
-        # Result Display
-        # --------------------------------------------------
+        # -------------------------------------------------
+        # Result handling
+        # -------------------------------------------------
         if result["status"] == "success":
             st.success("✅ Final Answer")
-            st.markdown(
-                f"""
-                <div style="font-size: 20px; font-weight: 600;">
-                    {result['answer']}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown(f"### {result['answer']}")
+
+            # ---- Provider badge (if available) ----
+            metadata = result.get("metadata", {})
+            provider = metadata.get("provider")
+            latency = metadata.get("latency")
+
+            cols = st.columns(3)
+            cols[0].metric("⏱️ Time", f"{elapsed}s")
+
+            if provider:
+                cols[1].metric("🤖 Provider", provider)
+
+            if latency:
+                cols[2].metric("⚡ LLM Latency", f"{latency}s")
+
+            # ---- Reasoning ----
+            with st.expander("🧠 High-Level Reasoning (User-Safe)"):
+                reasoning = result.get("reasoning")
+                if isinstance(reasoning, dict):
+                    st.json(reasoning)
+                else:
+                    st.write(reasoning)
+
         else:
             st.error("❌ Agent failed to produce a reliable answer.")
-            st.caption(result.get("error", "Unknown error"))
+            st.write(result.get("error", "Unknown error"))
 
-        # --------------------------------------------------
-        # Reasoning Summary
-        # --------------------------------------------------
-        if result.get("reasoning"):
-            st.subheader("🧠 High-Level Reasoning (User-Safe)")
-            if isinstance(result["reasoning"], str):
-                st.write(result["reasoning"])
-            else:
-                st.json(result["reasoning"])
+            with st.expander("🔍 Debug & Transparency"):
+                st.json(result)
 
-        # --------------------------------------------------
-        # Debug / Transparency Section
-        # --------------------------------------------------
-        with st.expander("🔍 Debug & Transparency"):
-            st.json(result)
-
-# --------------------------------------------------
+# -------------------------------------------------
 # Footer
-# --------------------------------------------------
+# -------------------------------------------------
 st.divider()
 st.caption(
-    "Built with deterministic logic + LLM reasoning · Designed for reliability and cost efficiency"
+    "Built with deterministic logic + LLM reasoning · "
+    "Designed for reliability and cost efficiency"
 )

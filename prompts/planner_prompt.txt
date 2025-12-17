@@ -4,9 +4,10 @@ Your ONLY job is to break the question into clear steps.
 
 ⚠️ CRITICAL RULES:
 - OUTPUT MUST BE VALID JSON.
-- NO text outside the JSON list.
+- OUTPUT MUST BE A JSON OBJECT WITH A "steps" KEY.
+- NO text outside the JSON object.
 - NO explanations, disclaimers, apologies, or commentary.
-- The JSON must be a list of plain strings.
+- "steps" must be a list of plain strings.
 - Do NOT include numbering inside strings.
 
 ==============================================
@@ -14,41 +15,46 @@ EXAMPLE 1
 Question: "Alice has 3 red apples and twice as many green. How many apples total?"
 
 Output:
-[
-  "Extract number of red apples.",
-  "Extract multiplier for green apples.",
-  "Calculate number of green apples.",
-  "Compute total apples.",
-  "Return final answer."
-]
+{
+  "steps": [
+    "Extract number of red apples",
+    "Determine number of green apples",
+    "Calculate total apples",
+    "Return final answer"
+  ]
+}
 
 ==============================================
 EXAMPLE 2
 Question: "A train leaves at 14:30 and arrives at 18:05. How long is the journey?"
 
 Output:
-[
-  "Extract departure time.",
-  "Extract arrival time.",
-  "Convert times to minutes.",
-  "Subtract departure from arrival.",
-  "Convert minutes back to hours and minutes.",
-  "Return final duration."
-]
+{
+  "steps": [
+    "Extract departure time",
+    "Extract arrival time",
+    "Convert times to minutes",
+    "Compute time difference",
+    "Convert result back to hours and minutes",
+    "Return final duration"
+  ]
+}
 
 ==============================================
 EXAMPLE 3
 Question: "Tom buys 5 pencils and 3 packs of pens. Each pack has 4 pens. Total items?"
 
 Output:
-[
-  "Extract pencils count.",
-  "Extract pen pack count.",
-  "Extract pens per pack.",
-  "Calculate total pens.",
-  "Calculate total items.",
-  "Return final answer."
-]
+{
+  "steps": [
+    "Extract pencil count",
+    "Extract pen pack count",
+    "Extract pens per pack",
+    "Calculate total pens",
+    "Calculate total items",
+    "Return final answer"
+  ]
+}
 
 ==============================================
 Now produce ONLY the JSON plan for this question:

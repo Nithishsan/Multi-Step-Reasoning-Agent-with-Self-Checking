@@ -1,21 +1,27 @@
-import re
+import ast
+import operator
 
-def safe_eval_math(text: str):
-    """
-    Extracts numbers and basic operators for simple arithmetic like:
-    - 2+2
-    - 10 - 4 + 2
-    - 3 * 7
-    - 20 / 5
-    """
+OPS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+}
 
-    expr = re.findall(r"[0-9+\-*/ ]+", text)
-    if not expr:
-        return None
+def _eval(node):
+    if isinstance(node, ast.Num):
+        return node.n
+    if isinstance(node, ast.BinOp):
+        return OPS[type(node.op)](_eval(node.left), _eval(node.right))
+    if isinstance(node, ast.UnaryOp):
+        return OPS[type(node.op)](_eval(node.operand))
+    raise ValueError("Unsupported expression")
 
-    expr = expr[0].strip()
-
+def safe_eval_math(expr: str):
     try:
-        return eval(expr, {"__builtins__": None}, {})
-    except:
+        tree = ast.parse(expr, mode="eval")
+        return _eval(tree.body)
+    except Exception:
         return None

@@ -1,20 +1,24 @@
 from agent.planner import Planner
 from agent.executor import Executor
 from agent.verifier import Verifier
+
 from utils.json_utils import safe_json_loads
 from utils.math_utils import safe_eval_math
 from utils.time_utils import compute_time_difference
+from utils.scheduling_utils import find_fitting_slots
+
+import re
 
 
 class AgentController:
     """
     Central controller for the Multi-Step Reasoning Agent.
 
-    Flow:
-    1. Fast deterministic handling (math / time) → NO LLM
-    2. Planner (LLM)
-    3. Executor (LLM)
-    4. Verifier (rule-based)
+    Flow priority:
+    1. Deterministic math problems (NO LLM)
+    2. Deterministic time-difference problems (NO LLM)
+    3. Deterministic scheduling / meeting-slot problems (NO LLM)
+    4. LLM-based Planner → Executor → Verifier pipeline
     """
 
     def __init__(self):
@@ -29,10 +33,8 @@ class AgentController:
         question = question.strip()
 
         # =====================================================
-        # FAST PATH — NO LLM (avoids cost + rate limits)
+        # FAST PATH 1 — SIMPLE MATH (NO LLM)
         # =====================================================
-
-        # ---- Simple math ----
         math_result = safe_eval_math(question)
         if math_result is not None:
             return {
@@ -42,8 +44,10 @@ class AgentController:
                 "metadata": {"source": "math_utils"}
             }
 
-        # ---- Time difference problems ----
-        if "leaves at" in question and "arrives at" in question:
+        # =====================================================
+        # FAST PATH 2 — TIME DIFFERENCE (NO LLM)
+        # =====================================================
+        if "leaves at" in question.lower() and "arrives at" in question.lower():
             duration = compute_time_difference(question)
             if duration:
                 return {
@@ -51,6 +55,19 @@ class AgentController:
                     "answer": duration,
                     "reasoning": "Solved deterministically (time_utils)",
                     "metadata": {"source": "time_utils"}
+                }
+
+        # =====================================================
+        # FAST PATH 3 — MEETING / SCHEDULING PROBLEMS (NO LLM)
+        # =====================================================
+        if "meeting" in question.lower() and "slot" in question.lower():
+            slots = find_fitting_slots(question, required_minutes=60)
+            if slots:
+                return {
+                    "status": "success",
+                    "answer": ", ".join(slots),
+                    "reasoning": "Solved deterministically (scheduling_utils)",
+                    "metadata": {"source": "scheduling_utils"}
                 }
 
         # =====================================================
@@ -73,7 +90,7 @@ class AgentController:
 
         final_answer = exec_result["final_answer"]
 
-        # ---------- Step 3: Verifier (rule-based) ----------
+        # ---------- Step 3: Verifier ----------
         verification = self.verifier.verify(question, final_answer)
 
         if not verification.get("passed", False):
